@@ -4,8 +4,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/aws"
-	"log"
 	"encoding/json"
+	"fmt"
 )
 
 type SQSNotice struct {
@@ -43,7 +43,7 @@ func NewSQSNotifier(queue string) (*SQSNotifier, error) {
 	}, nil
 }
 
-func (s *SQSNotifier) Get() (notice *SQSNotice) {
+func (s *SQSNotifier) Get() (notice *SQSNotice, err error) {
 	// Receive message
 	receive_params := &sqs.ReceiveMessageInput{
 		QueueUrl:            aws.String(s.queue),
@@ -54,24 +54,22 @@ func (s *SQSNotifier) Get() (notice *SQSNotice) {
 
 	receive_resp, err := s.service.ReceiveMessage(receive_params)
 	if err != nil {
-		log.Printf("Error ReceiveMessage: %s\n", err)
-		return
+		return nil, fmt.Errorf("Error ReceiveMessage: %s\n", err)
 	}
 
 	if len(receive_resp.Messages) == 0 {
-		return
+		return nil, nil
 	}
 
 	notice = &SQSNotice{}
 	err = json.Unmarshal([]byte(*receive_resp.Messages[0].Body), notice)
 	if err != nil {
-		log.Printf("Error Unmarshal: %s\n", err)
-		return nil
+		return nil, fmt.Errorf("Error Unmarshal: %s\n", err)
 	}
 
 	notice.ReceiptHandle = receive_resp.Messages[0].ReceiptHandle
 
-	return notice
+	return notice, nil
 }
 
 func (s *SQSNotifier) Delete(notice *SQSNotice) (err error) {
@@ -84,5 +82,5 @@ func (s *SQSNotifier) Delete(notice *SQSNotice) (err error) {
 	if err != nil {
 		return err
 	}
-	return
+	return err
 }

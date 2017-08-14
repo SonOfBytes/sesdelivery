@@ -1,15 +1,17 @@
 package main
 
 import (
-	"github.com/sonofbytes/sesdelivery/notification"
+	"github.com/eawsy/aws-lambda-go-core/service/lambda/runtime"
+	"github.com/sonofbytes/sesdelivery"
 	"log"
+	"fmt"
 	"github.com/sonofbytes/sesdelivery/collect"
 	"github.com/sonofbytes/sesdelivery/deliver"
-	"fmt"
-	"github.com/sonofbytes/sesdelivery"
+	"github.com/sonofbytes/sesdelivery/notification"
+	"time"
 )
 
-func main() {
+func Handle(evt interface{}, ctx *runtime.Context) (string, error) {
 	params, err := sesdelivery.NewParameters()
 	if err != nil {
 		log.Fatal(err.Error())
@@ -38,15 +40,16 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	fmt.Printf("Polling ")
-	for {
+	log.Printf("Started Polling ...")
+	start := time.Now()
+	for time.Now().Before(start.Add(59 * time.Second)){
 		notice, err := notifier.Get()
 		if err != nil {
 			log.Fatal(err.Error())
 		}
 		if notice == nil {
-			fmt.Printf(".")
-			continue
+			log.Printf("Finished polling - duration %0.2d seconds", time.Since(start).Seconds())
+			return "", nil
 		}
 
 		bucket := notice.Receipt.Action.BucketName
@@ -90,7 +93,9 @@ func main() {
 				log.Fatal(err.Error())
 			}
 
-			fmt.Printf(">")
+			fmt.Printf("Sent to %s From %s - %s/%s", recipients, sender, bucket, key)
 		}
 	}
+
+	return "Failed poll loop", nil
 }
