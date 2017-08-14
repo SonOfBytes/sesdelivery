@@ -6,20 +6,25 @@ import (
 	"github.com/sonofbytes/sesdelivery/collect"
 	"github.com/sonofbytes/sesdelivery/deliver"
 	"fmt"
-	"flag"
+	"github.com/sonofbytes/sesdelivery"
 )
 
-var (
-	smtpServer string
-	sqsQueue string
-)
-
-func init() {
-	flag.StringVar(&smtpServer, "s", "", "smtp server host to send email to")
-	flag.StringVar(&sqsQueue, "q", "", "SQS queue to get notices from")
-}
 func main() {
-	flag.Parse()
+	params, err := sesdelivery.NewParameters()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	smtpServer, err := params.GetSMTPServer()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	sqsQueue, err := params.GetSQSNoticeQueue()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
 	log.Printf("Send email to %s from notices at %s", smtpServer, sqsQueue)
 
 	collectors := make(map[string]*collect.S3SES)
