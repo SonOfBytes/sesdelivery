@@ -1,22 +1,22 @@
 package notification
 
 import (
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/sqs"
-	"github.com/aws/aws-sdk-go/aws"
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sqs"
 )
 
 type SQSNotice struct {
-	ReceiptHandle *string `json:"-"`
-	NotificationType string `json:"notificationType"`
-	Mail struct {
+	ReceiptHandle    *string `json:"-"`
+	NotificationType string  `json:"notificationType"`
+	Mail             struct {
 		Source string `json:"source"`
 	} `json:"mail"`
 	Receipt struct {
 		Recipients []string `json:"recipients"`
-		Action struct {
+		Action     struct {
 			BucketName string `json:"bucketName"`
 			ObjectKey  string `json:"objectKey"`
 		} `json:"action"`
@@ -26,12 +26,12 @@ type SQSNotice struct {
 type SQSNotifier struct {
 	session *session.Session
 	service *sqs.SQS
-	queue string
+	queue   string
 }
 
 func NewSQSNotifier(queue string) (*SQSNotifier, error) {
 	sess := session.New(&aws.Config{
-		MaxRetries:  aws.Int(5),
+		MaxRetries: aws.Int(5),
 	})
 
 	svc := sqs.New(sess)
@@ -39,7 +39,7 @@ func NewSQSNotifier(queue string) (*SQSNotifier, error) {
 	return &SQSNotifier{
 		session: sess,
 		service: svc,
-		queue: queue,
+		queue:   queue,
 	}, nil
 }
 
@@ -49,7 +49,7 @@ func (s *SQSNotifier) Get() (notice *SQSNotice, err error) {
 		QueueUrl:            aws.String(s.queue),
 		MaxNumberOfMessages: aws.Int64(1),
 		VisibilityTimeout:   aws.Int64(60), // this is twice the event poll length
-		WaitTimeSeconds:     aws.Int64(20),
+		WaitTimeSeconds:     aws.Int64(0),
 	}
 
 	receive_resp, err := s.service.ReceiveMessage(receive_params)
@@ -76,7 +76,6 @@ func (s *SQSNotifier) Delete(notice *SQSNotice) (err error) {
 	delete_params := &sqs.DeleteMessageInput{
 		QueueUrl:      aws.String(s.queue),
 		ReceiptHandle: notice.ReceiptHandle,
-
 	}
 	_, err = s.service.DeleteMessage(delete_params) // No response returned when successful.
 	if err != nil {

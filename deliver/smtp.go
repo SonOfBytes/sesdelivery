@@ -1,9 +1,9 @@
 package deliver
 
 import (
+	"fmt"
 	"io"
 	netsmtp "net/smtp"
-	"fmt"
 )
 
 type SMTP struct {
@@ -14,7 +14,7 @@ type SMTP struct {
 func NewSMTP(server string) (smtp *SMTP, err error) {
 	return &SMTP{
 		server: server,
-	} , nil
+	}, nil
 }
 
 func (s *SMTP) Send(sender string, recipients []string, body io.ReadCloser) (err error) {

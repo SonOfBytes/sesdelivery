@@ -1,12 +1,12 @@
 package collect
 
 import (
+	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"io"
-	"github.com/aws/aws-sdk-go/service/s3/s3crypto"
-	"fmt"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3crypto"
+	"io"
 )
 
 type S3SES struct {
@@ -16,10 +16,8 @@ type S3SES struct {
 
 func NewS3SES(bucket string) (*S3SES, error) {
 	return &S3SES{
-		session: session.New(&aws.Config{
-			Region: aws.String("eu-west-1"),
-		}),
-		Bucket: bucket,
+		session: session.New(&aws.Config{}),
+		Bucket:  bucket,
 	}, nil
 }
 
@@ -65,9 +63,9 @@ func (s *S3SES) Archive(key string) (err error) {
 	client := s3.New(s.session)
 
 	input := &s3.CopyObjectInput{
-		Bucket: aws.String(s.Bucket),
+		Bucket:     aws.String(s.Bucket),
 		CopySource: aws.String(fmt.Sprintf("%s/%s", s.Bucket, key)),
-		Key:    aws.String(fmt.Sprintf("archive/%s", key)),
+		Key:        aws.String(fmt.Sprintf("archive/%s", key)),
 	}
 
 	_, err = client.CopyObject(input)

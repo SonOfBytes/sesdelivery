@@ -19,6 +19,18 @@ data "aws_iam_policy_document" "sesdelivery_lambda_role" {
     effect = "Allow"
 
     actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+
+    resources = [
+      "${aws_cloudwatch_log_group.lambda_logs.arn}",
+    ]
+  }
+  statement {
+    effect = "Allow"
+
+    actions = [
       "ssm:GetParameter",
     ]
 
@@ -29,14 +41,31 @@ data "aws_iam_policy_document" "sesdelivery_lambda_role" {
   }
   statement {
     effect = "Allow"
-
     actions = [
-      "logs:*",
+      "sqs:ReceiveMessage",
+      "sqs:DeleteMessage"
     ]
-
     resources = [
-      "arn:aws:logs:*:*:*",
+      "${aws_sqs_queue.sesdelivery.arn}"
     ]
+  }
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject",
+    ]
+    resources = [
+      "${aws_s3_bucket.sesdelivery.arn}/*"]
+  }
+  statement {
+    effect = "Allow"
+    actions = [
+      "kms:Decrypt",
+    ]
+    resources = [
+      "${aws_kms_key.sesdelivery.arn}"]
   }
 }
 
@@ -46,6 +75,7 @@ resource "aws_iam_role" "sesdelivery_lambda" {
 }
 
 resource "aws_iam_policy" "sesdelivery_lambda" {
+  name = "sesdelivery_lambda_policy"
   policy = "${data.aws_iam_policy_document.sesdelivery_lambda_role.json}"
 }
 
@@ -61,10 +91,16 @@ resource "aws_lambda_function" "sesdelivery_lambda" {
   handler          = "handler.Handle"
   source_code_hash = "${base64sha256(file("handler.zip"))}"
   runtime          = "python2.7"
+  timeout = 120
 
   environment {
     variables = {
       LAMBDA_FUNCTION_NAME = "sesdelivery"
     }
   }
+}
+
+resource "aws_cloudwatch_log_group" "lambda_logs" {
+  name = "/aws/lambda/${aws_lambda_function.sesdelivery_lambda.function_name}"
+  retention_in_days = "30"
 }

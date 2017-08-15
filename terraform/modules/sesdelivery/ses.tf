@@ -1,5 +1,5 @@
 resource "aws_ses_receipt_rule" "sesdelivery" {
-  name          = "store"
+  name = "sesdelivery"
   rule_set_name = "default-rule-set"
   recipients    = "${sort(var.ses_recipients)}"
   enabled       = true
